@@ -5,6 +5,8 @@ pub struct PostProps {
     post_id: u32,
 }
 
+#[allow(unused)]
+#[allow(non_snake_case)]
 pub fn Post(cx: Scope<PostProps>) -> Element {
     cx.render(rsx! {
         div {
