@@ -1,29 +1,41 @@
-use dioxus::prelude::*;
+use dioxus::{prelude::*, events::MouseEvent};
 
 
 fn main() {
     dioxus::desktop::launch(App);
 }
 
+#[allow(non_snake_case)]
 fn App(cx: Scope) -> Element {
-
-let mut state = use_state(&cx, || "red");
-    // cx.render(rsx! (
-    //     div { "Hello, world!" }
-    // ))
+    let (count, set_count) = use_state(&cx, || 0i32);
     cx.render(rsx!(
-        Container {
-            Light { color: "red", enabled: state == "red", }
-            Light { color: "yellow", enabled: state == "yellow", }
-            Light { color: "green", enabled: state == "green", }
+        h1 { "High-Five counter: {count}"}
+        Quantity {
+            on_up: move |_| set_count(count + 1),
+            on_down: move |_| set_count(count - 1),
+        }
+    ))
+}
 
-            onclick: move |_| {
-                state.set(match *state {
-                    "green" => "yellow",
-                    "yellow" => "red",
-                    "red" => "green",
-                })
-            }
+#[derive(Props)]
+struct QuantityProps<'a> {
+    on_up: EventHandler<'a, MouseEvent>,
+    on_down: EventHandler<'a, MouseEvent>,
+}
+
+#[allow(non_snake_case)]
+fn Quantity<'a>(cx: Scope<'a, QuantityProps<'a>>) -> Element<'a> {
+    let button_style = "padding: 4px; background-color: #ccf; min-width: 60px;";
+    cx.render(rsx!(
+        button {
+            style: "{button_style}",
+            onclick: move |evt| cx.props.on_down.call(evt),
+            "Down"
+        }
+        button {
+            style: "{button_style}",
+            onclick: move |evt| cx.props.on_up.call(evt),
+            "Up"
         }
     ))
 }
