@@ -1,10 +1,12 @@
 use dioxus::prelude::*;
-
 mod action;
+mod meta;
+mod title;
+mod vote;
 
 #[derive(PartialEq, Props)]
 pub struct PostProps {
-    post_id: u32,
+    id: u32,
     score: i32,
     comment_count: u32,
     post_time: std::time::Instant,
@@ -19,8 +21,13 @@ pub fn Post(cx: Scope<PostProps>) -> Element {
     cx.render(rsx! {
         div {
             class: "post-container",
+            vote::VoteButton {}
+            title::TitleCard {
+                title: cx.props.title.clone()
+            }
+            meta::PostMeta {}
             action::ActionCard {
-                post_id: cx.props.post_id
+                post_id: cx.props.id
             }
             ul {
                 li {
