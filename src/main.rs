@@ -1,5 +1,5 @@
-use dioxus::{prelude::*, events::MouseEvent};
-
+use dioxus::{events::MouseEvent, prelude::*};
+mod csv;
 
 fn main() {
     dioxus::desktop::launch(App);
@@ -7,17 +7,30 @@ fn main() {
 
 #[allow(non_snake_case)]
 fn App(cx: Scope) -> Element {
+    let csv = use_future(&cx, || async move { csv::load_csv().await });
     let (count, set_count) = use_state(&cx, || 0i32);
-    cx.render(rsx!(
-        h1 {
-            style { [include_str!("../assets/main.scss")] }
-            "High-Five counter: {count}"
+    match csv.value() {
+        Some(Ok(csv)) => {
+            dbg!(csv.len());
+            cx.render(rsx!(
+                h1 {
+                    style { [include_str!("../assets/main.scss")] }
+                    "High-Five counter: {count}"
+                }
+                Quantity {
+                    on_up: move |_| set_count(count + 1),
+                    on_down: move |_| set_count(count - 1),
+                }
+                div {
+                    csv.iter().take(10).map(|l| rsx!(
+                        div {
+                            "{l}"
+                        }) )
+                }
+            ))
         }
-        Quantity {
-            on_up: move |_| set_count(count + 1),
-            on_down: move |_| set_count(count - 1),
-        }
-    ))
+        _ => cx.render(rsx!("No data found yet")),
+    }
 }
 
 #[derive(Props)]
