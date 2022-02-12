@@ -11,25 +11,25 @@ fn App(cx: Scope) -> Element {
     let (count, set_count) = use_state(&cx, || 0i32);
     match csv.value() {
         Some(Ok(csv)) => {
-            dbg!(csv.len());
+            let len = csv.len();
             cx.render(rsx!(
                 h1 {
                     style { [include_str!("../assets/main.scss")] }
-                    "High-Five counter: {count}"
+                    "Fukuoka COVID-19 viewer: {len}"
                 }
                 Quantity {
                     on_up: move |_| set_count(count + 1),
                     on_down: move |_| set_count(count - 1),
                 }
                 div {
-                    csv.iter().take(10).map(|l| rsx!(
+                    csv.iter().skip(len - 20).map(|l| rsx!(
                         div {
                             "{l}"
                         }) )
                 }
             ))
         }
-        _ => cx.render(rsx!("No data found yet")),
+        _ => cx.render(rsx!("Fetching data ...")),
     }
 }
 
