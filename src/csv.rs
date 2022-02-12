@@ -8,12 +8,10 @@ pub async fn load_csv() -> hyper::Result<Vec<String>> {
     let buf = hyper::body::to_bytes(res).await?;
     let str = String::from_utf8_lossy(buf.as_ref());
     for l in str.lines() {
-        if let Some(rurl) = target.captures(l) {
-            let url = &rurl[0];
-            let res = client.get(url.parse().expect("wrong url")).await?;
+        if let Some(url) = target.captures(l) {
+            let res = client.get(url[0].parse().expect("wrong url")).await?;
             let buf = hyper::body::to_bytes(res).await?;
-            let str = String::from_utf8_lossy(buf.as_ref());
-            return Ok(str
+            return Ok(String::from_utf8_lossy(buf.as_ref())
                 .split('\n')
                 .map(|s| s.to_string())
                 .collect::<Vec<String>>());
