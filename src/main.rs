@@ -9,7 +9,10 @@ fn main() {
 fn App(cx: Scope) -> Element {
     let (count, set_count) = use_state(&cx, || 0i32);
     cx.render(rsx!(
-        h1 { "High-Five counter: {count}"}
+        h1 {
+            style { [include_str!("../assets/main.scss")] }
+            "High-Five counter: {count}"
+        }
         Quantity {
             on_up: move |_| set_count(count + 1),
             on_down: move |_| set_count(count - 1),
