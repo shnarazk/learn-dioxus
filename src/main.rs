@@ -33,6 +33,11 @@ fn App(cx: Scope) -> Element {
     }
 }
 
+#[derive(Default, PartialEq, Props)]
+struct CovidProps {
+    csv: Vec<String>,
+}
+
 #[derive(Props)]
 struct QuantityProps<'a> {
     on_up: EventHandler<'a, MouseEvent>,
