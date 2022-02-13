@@ -1,18 +1,21 @@
-use {
-    dioxus::{events::MouseEvent, prelude::*},
-    std::collections::HashMap,
-};
+use {dioxus::prelude::*, std::collections::HashMap};
 mod csv;
 
 fn main() {
     dioxus::desktop::launch(App);
 }
 
+enum TableMode {
+    Date,
+    Location,
+    Age,
+}
+
 #[allow(non_snake_case)]
 fn App(cx: Scope) -> Element {
     let csv = use_future(&cx, || async move { csv::load_csv().await });
-    // let (count, set_count) = use_state(&cx, || 0i32);
-    let (_hash, update_hash) = use_state(&cx, HashMap::<&str, u32>::new);
+    let (display_mode, set_display_mode) = use_state(&cx, || TableMode::Date);
+    // let (_hash, update_hash) = use_state(&cx, HashMap::<&str, u32>::new);
     match csv.value() {
         Some(Ok(csv)) => {
             let len = csv.len();
@@ -30,22 +33,30 @@ fn App(cx: Scope) -> Element {
                 .filter(|(k, _)| !k.is_empty())
                 .collect();
             ages.sort_unstable();
+            let mut dates: Vec<(&str, u32)> = ht_dates.iter().map(|(k, v)| (*k, *v)).collect();
+            dates.sort_unstable();
+            dates.reverse();
+            dates.resize(21, ("", 0));
             let mut locs: Vec<(&str, u32)> = ht_locs
                 .iter()
                 .map(|(k, v)| (*k, *v))
                 .filter(|(k, v)| !k.is_empty() && 100 <= *v)
                 .collect();
             locs.sort_by_cached_key(|i| -(i.1 as i32));
+            let table = match display_mode {
+                TableMode::Age => rsx!(Table { data: ages }),
+                TableMode::Date => rsx!(Table { data: dates }),
+                TableMode::Location => rsx!(Table { data: locs }),
+            };
             cx.render(rsx!(
                 h1 {
                     style { [include_str!("../assets/main.scss")] }
                     "Fukuoka COVID-19 viewer: {len}"
                 }
-                button { onclick: move |_| {}, "時間順" }
-                button { onclick: move |_| {}, "世代別" }
-                button { onclick: move |_| {}, "地区別" }
-                Table { data: ages }
-                Table { data: locs }
+                button { onclick: move |_| {set_display_mode(TableMode::Age)}, "世代別" }
+                button { onclick: move |_| {set_display_mode(TableMode::Date)}, "時間順" }
+                button { onclick: move |_| {set_display_mode(TableMode::Location)}, "地区別" }
+                table
             ))
         }
         _ => cx.render(rsx!("Fetching data ...")),
@@ -91,27 +102,4 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
 #[derive(Default, PartialEq, Props)]
 struct CovidProps {
     csv: Vec<String>,
-}
-
-#[derive(Props)]
-struct QuantityProps<'a> {
-    on_up: EventHandler<'a, MouseEvent>,
-    on_down: EventHandler<'a, MouseEvent>,
-}
-
-#[allow(non_snake_case)]
-fn Quantity<'a>(cx: Scope<'a, QuantityProps<'a>>) -> Element<'a> {
-    let button_style = "padding: 4px; background-color: #ccf; min-width: 60px;";
-    cx.render(rsx!(
-        button {
-            style: "{button_style}",
-            onclick: move |evt| cx.props.on_down.call(evt),
-            "Down"
-        }
-        button {
-            style: "{button_style}",
-            onclick: move |evt| cx.props.on_up.call(evt),
-            "Up"
-        }
-    ))
 }
