@@ -32,7 +32,17 @@ fn App(cx: Scope) -> Element {
                 .map(|(k, v)| (*k, *v))
                 .filter(|(k, _)| !k.is_empty())
                 .collect();
-            ages.sort_unstable();
+            ages.sort_by_cached_key(|(e, _)| {
+                if *e == "10歳未満" {
+                    return "10代".to_string();
+                }
+                let mut s = e.to_string();
+                if s.chars().count() == 3 {
+                    s.push('_');
+                }
+                s
+            });
+            // ages.sort_unstable();
             let mut dates: Vec<(&str, u32)> = ht_dates.iter().map(|(k, v)| (*k, *v)).collect();
             dates.sort_unstable();
             dates = dates
@@ -98,9 +108,8 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
         graph_height, // graph_height - (cx.props.data[0].1 as f32) * scale_h,
         path_str,
     );
-    dbg!(&path);
     cx.render(rsx!(
-                hr {}
+        hr {}
         div {
             style: "width: 94%; margin-left: 3%;",
                 svg {
