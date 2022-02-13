@@ -16,53 +16,76 @@ fn App(cx: Scope) -> Element {
     match csv.value() {
         Some(Ok(csv)) => {
             let len = csv.len();
-            let mut locs: HashMap<&str, u32> = HashMap::new();
-            let mut dates: HashMap<&str, u32> = HashMap::new();
-            let mut ages: HashMap<&str, u32> = HashMap::new();
+            let mut ht_locs: HashMap<&str, u32> = HashMap::new();
+            let mut ht_dates: HashMap<&str, u32> = HashMap::new();
+            let mut ht_ages: HashMap<&str, u32> = HashMap::new();
             for ci in csv.iter() {
-                *dates.entry(&ci.date).or_insert(0) += 1;
-                *locs.entry(&ci.location).or_insert(0) += 1;
-                *ages.entry(&ci.age).or_insert(0) += 1;
+                *ht_dates.entry(&ci.date).or_insert(0) += 1;
+                *ht_locs.entry(&ci.location).or_insert(0) += 1;
+                *ht_ages.entry(&ci.age).or_insert(0) += 1;
             }
-            let mut ages: Vec<(&str, u32)> = ages.iter().map(|(k, v)| (*k, *v)).collect();
+            let mut ages: Vec<(&str, u32)> = ht_ages
+                .iter()
+                .map(|(k, v)| (*k, *v))
+                .filter(|(k, _)| !k.is_empty())
+                .collect();
             ages.sort_unstable();
+            let mut locs: Vec<(&str, u32)> = ht_locs
+                .iter()
+                .map(|(k, v)| (*k, *v))
+                .filter(|(k, v)| !k.is_empty() && 100 <= *v)
+                .collect();
+            locs.sort_by_cached_key(|i| -(i.1 as i32));
             cx.render(rsx!(
                 h1 {
                     style { [include_str!("../assets/main.scss")] }
                     "Fukuoka COVID-19 viewer: {len}"
                 }
-                button {
-                    onclick: move |_| {}, "時間順"
-                }
-                button {
-                    onclick: move |_| {}, "世代別"
-                }
-                button {
-                    onclick: move |_| {}, "地区別"
-                }
-                // Quantity {
-                //     on_up: move |_| set_count(count + 1),
-                //     on_down: move |_| set_count(count - 1),
-                // }
-                // div {
-                //     csv.iter().skip(len - 20).map(|l| rsx!(
-                //         div {
-                //             "{l:?}"
-                //         }) )
-                // }
-                hr {}
-                div {
-                    style: "margin-left: 20px;margin-right: 20px; background-color: #eee;",
-                    ages.iter().map(|a| rsx!(
-                        div {
-                            "{a:?}"
-                        }
-                    ))
-                }
+                button { onclick: move |_| {}, "時間順" }
+                button { onclick: move |_| {}, "世代別" }
+                button { onclick: move |_| {}, "地区別" }
+                Table { data: ages }
+                Table { data: locs }
             ))
         }
         _ => cx.render(rsx!("Fetching data ...")),
     }
+}
+
+#[derive(Default, PartialEq, PartialOrd, Props)]
+struct TableProps<'a> {
+    data: Vec<(&'a str, u32)>,
+}
+
+#[allow(non_snake_case)]
+fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
+    cx.render(rsx!(
+                hr {}
+                div {
+                    style: "margin-left: 20px;margin-right: 20px; background-color: #eee;",
+                    class: "table",
+                    cx.props.data.iter().enumerate().map(|(i, (k, v))| {
+                        let style = if i % 2 == 0 {
+                            "background-color: #eeeeee;"
+                        } else {
+                            "background-color: #eaeaea;"
+                        };
+                        rsx!(
+                            div {
+                                style: "{style}",
+                                div {
+                                    style: "display: inline-block; width: 180px; margin-left: 20px; text-align: left;",
+                                    "{k}"
+                                }
+                                div {
+                                    style: "display: inline-block; width: 120px; margin-left: 10px; text-align: right;",
+                                    "{v}"
+                                }
+                            }
+                        )
+                    })
+                }
+    ))
 }
 
 #[derive(Default, PartialEq, Props)]
