@@ -5,6 +5,7 @@ fn main() {
     dioxus::desktop::launch(App);
 }
 
+#[derive(PartialEq)]
 enum TableMode {
     Date,
     Location,
@@ -61,14 +62,65 @@ fn App(cx: Scope) -> Element {
                 TableMode::Date => rsx!(Table { data: dates }),
                 TableMode::Location => rsx!(Table { data: locs }),
             };
+            let button_age = if *display_mode == TableMode::Age {
+                rsx!(
+                    button {
+                        class: "current-mode",
+                        onclick: move |_| {set_display_mode(TableMode::Age)},
+                        "世代別"
+                    }
+                )
+            } else {
+                rsx!(
+                    button {
+                        class: "other-mode",
+                        onclick: move |_| {set_display_mode(TableMode::Age)},
+                        "世代別"
+                    }
+                )
+            };
+            let button_date = if *display_mode == TableMode::Date {
+                rsx!(
+                    button {
+                        class: "current-mode",
+                        onclick: move |_| {set_display_mode(TableMode::Date)},
+                "時間順"
+                    }
+                )
+            } else {
+                rsx!(
+                    button {
+                        class: "other-mode",
+                        onclick: move |_| {set_display_mode(TableMode::Date)},
+                        "時間順"
+                    }
+                )
+            };
+            let button_loc = if *display_mode == TableMode::Location {
+                rsx!(
+                    button {
+                        class: "current-mode",
+                        onclick: move |_| {set_display_mode(TableMode::Location)},
+                        "地区別"
+                    }
+                )
+            } else {
+                rsx!(
+                    button {
+                        class: "other-mode",
+                        onclick: move |_| {set_display_mode(TableMode::Location)},
+                        "地区別"
+                    }
+                )
+            };
             cx.render(rsx!(
                 h1 {
                     style { [include_str!("../assets/main.scss")] }
                     "Fukuoka COVID-19 viewer: {len}"
                 }
-                button { onclick: move |_| {set_display_mode(TableMode::Age)}, "世代別" }
-                button { onclick: move |_| {set_display_mode(TableMode::Date)}, "時間順" }
-                button { onclick: move |_| {set_display_mode(TableMode::Location)}, "地区別" }
+                button_age
+                button_date
+                button_loc
                 table
             ))
         }
@@ -111,7 +163,7 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
     cx.render(rsx!(
         hr {}
         div {
-            style: "width: 94%; margin-left: 3%;",
+            style: "width: 94%; margin-left: 3%; margin-bottom: 1rem; background-color: #f8f8f8;",
                 svg {
                     fill: "none",
                     stroke: "currentColor",

@@ -6,6 +6,12 @@ button {
     magin: 8pt;
     padding: 4pt;
     border: 1px solid #88f;
-    background-color: #ccf;
+    background-color: #e8e8ff;
     cursor: pointer;
+}
+.current-mode {
+    background-color: #c8c8ff;
+}
+.other-mode {
+    color: #777;
 }
