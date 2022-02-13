@@ -35,8 +35,11 @@ fn App(cx: Scope) -> Element {
             ages.sort_unstable();
             let mut dates: Vec<(&str, u32)> = ht_dates.iter().map(|(k, v)| (*k, *v)).collect();
             dates.sort_unstable();
-            dates.reverse();
-            dates.resize(21, ("", 0));
+            dates = dates
+                .iter()
+                .skip(dates.len() - 21)
+                .copied()
+                .collect::<Vec<_>>();
             let mut locs: Vec<(&str, u32)> = ht_locs
                 .iter()
                 .map(|(k, v)| (*k, *v))
@@ -70,8 +73,47 @@ struct TableProps<'a> {
 
 #[allow(non_snake_case)]
 fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
+    let graph_width: f32 = 400.0;
+    let graph_height: f32 = 100.0;
+    let height: f32 = cx.props.data.iter().map(|e| e.1).max().unwrap() as f32;
+    let width: f32 = cx.props.data.len() as f32;
+    let scale_w = graph_width / width;
+    let scale_h = graph_height / height;
+    let path_str = cx
+        .props
+        .data
+        .iter()
+        .enumerate()
+        .map(|(i, (_key, v))| {
+            format!(
+                "L{:.2},{:.2}",
+                i as f32 * scale_w,
+                graph_height - *v as f32 * scale_h
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let path = format!(
+        "M0,{:.2} {}",
+        graph_height, // graph_height - (cx.props.data[0].1 as f32) * scale_h,
+        path_str,
+    );
+    dbg!(&path);
     cx.render(rsx!(
                 hr {}
+        div {
+            style: "width: 94%; margin-left: 3%;",
+                svg {
+                    fill: "none",
+                    stroke: "currentColor",
+                    stroke_linecap: "round",
+                    stroke_linejoin: "round",
+                    stroke_width: "1",
+                    view_box: "0 0 400 100",
+                    // xmlns: "http://www.w3.org/2000/svg",
+                    path { d: "{path}" }
+                }
+        }
                 div {
                     style: "margin-left: 20px;margin-right: 20px; background-color: #eee;",
                     class: "table",
