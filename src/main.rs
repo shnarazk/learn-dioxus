@@ -58,9 +58,18 @@ fn App(cx: Scope) -> Element {
                 .collect();
             locs.sort_by_cached_key(|i| -(i.1 as i32));
             let table = match display_mode {
-                TableMode::Age => rsx!(Table { data: ages }),
-                TableMode::Date => rsx!(Table { data: dates }),
-                TableMode::Location => rsx!(Table { data: locs }),
+                TableMode::Age => rsx!(Table {
+                    data: ages,
+                    with_ema: false
+                }),
+                TableMode::Date => rsx!(Table {
+                    data: dates,
+                    with_ema: true
+                }),
+                TableMode::Location => rsx!(Table {
+                    data: locs,
+                    with_ema: false
+                }),
             };
             let button_age = if *display_mode == TableMode::Age {
                 rsx!(
@@ -131,78 +140,109 @@ fn App(cx: Scope) -> Element {
 #[derive(Default, PartialEq, PartialOrd, Props)]
 struct TableProps<'a> {
     data: Vec<(&'a str, u32)>,
+    with_ema: bool,
 }
 
 #[allow(non_snake_case)]
 fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
     let graph_width: f32 = 400.0;
     let graph_height: f32 = 100.0;
-    let height: f32 = cx.props.data.iter().map(|e| e.1).max().unwrap() as f32;
+    let height: f32 = cx.props.data.iter().map(|e| (e.1 / 2000 + 1) * 2000).max().unwrap() as f32;
     let width: f32 = cx.props.data.len() as f32;
-    let scale_w = graph_width / width;
+    let scale_w = graph_width / (width - 1.0);
     let scale_h = graph_height / height;
-    let path_str = cx
-        .props
-        .data
-        .iter()
-        .enumerate()
-        .map(|(i, (_key, v))| {
-            format!(
-                "L{:.2},{:.2}",
-                i as f32 * scale_w,
-                graph_height - *v as f32 * scale_h
-            )
-        })
-        .collect::<Vec<_>>()
-        .join(" ");
     let path = format!(
         "M0,{:.2} {}",
-        graph_height, // graph_height - (cx.props.data[0].1 as f32) * scale_h,
-        path_str,
+        graph_height - (cx.props.data[0].1 as f32) * scale_h,
+        cx.props
+            .data
+            .iter()
+            .enumerate()
+            .map(|(i, (_, v))| {
+                format!(
+                    "L{:.2},{:.2}",
+                    i as f32 * scale_w,
+                    graph_height - *v as f32 * scale_h
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(" "),
     );
+    let mut ema_vec: Vec<f32> = cx.props.data.iter().map(|(_, v)| *v as f32).clone().collect::<Vec<_>>();
+    {
+        let first = cx.props.data[0].1 as f32;
+        for _ in 0..6 {
+            ema_vec.insert(0, first);
+        }
+    }
+    let average = |v: &[f32]| { v.iter().sum::<f32>() / v.len() as f32 };
+    let path_ema = if cx.props.with_ema {
+        format!(
+            "M0,{:.2} {}",
+            graph_height - ema_vec[0] * scale_h,
+            ema_vec
+                .windows(7)
+                .enumerate()
+                .map(|(i, v)| {
+                    format!(
+                        "L{:.2},{:.2}",
+                        i as f32 * scale_w,
+                        graph_height - average(v) * scale_h
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        )
+    } else {
+        "".to_string()
+    };
+    let cell_style = "display: inline-block; width: 180px; margin-left: 20px; text-align: left;";
     cx.render(rsx!(
         hr {}
         div {
             style: "width: 94%; margin-left: 3%; margin-bottom: 1rem; background-color: #f8f8f8;",
-                svg {
-                    fill: "none",
-                    stroke: "currentColor",
-                    stroke_linecap: "round",
-                    stroke_linejoin: "round",
-                    stroke_width: "1",
-                    view_box: "0 0 400 100",
-                    // xmlns: "http://www.w3.org/2000/svg",
-                    path { d: "{path}" }
-                }
-        }
-                div {
-                    style: "margin-left: 20px;margin-right: 20px; background-color: #eee;",
-                    class: "table",
-                    cx.props.data.iter().enumerate().map(|(i, (k, v))| {
-                        let style = if i % 2 == 0 {
-                            "background-color: #eeeeee;"
-                        } else {
-                            "background-color: #eaeaea;"
-                        };
-                        rsx!(
-                            div {
-                                style: "{style}",
-                                div {
-                                    style: "display: inline-block; width: 180px; margin-left: 20px; text-align: left;",
-                                    "{k}"
-                                }
-                                div {
-                                    style: "display: inline-block; width: 120px; margin-left: 10px; text-align: right;",
-                                    "{v}"
-                                }
-                            }
-                        )
-                    })
-                }
-    ))
-}
+            svg {
+                fill: "none",
+                stroke_linecap: "round",
+                stroke_linejoin: "round",
 
-#[derive(Default, PartialEq, Props)]
-struct CovidProps {
-    csv: Vec<String>,
+                view_box: "0 0 400 100",
+                // xmlns: "http://www.w3.org/2000/svg",
+                path {
+                    stroke: "red",
+                    stroke_width: "0.6",
+                    d: "{path_ema}"
+                }
+                path {
+                    stroke: "currentColor",
+                    stroke_width: "1",
+                    d: "{path}"
+                }
+            }
+        }
+        div {
+            style: "margin-left: 20px;margin-right: 20px; background-color: #eee;",
+            class: "table",
+            cx.props.data.iter().enumerate().map(|(i, (k, v))| {
+                let style = if i % 2 == 0 {
+                    "background-color: #eeeeee;"
+                } else {
+                    "background-color: #eaeaea;"
+                };
+                rsx!(
+                    div {
+                        style: "{style}",
+                        div {
+                            style: "{cell_style}",
+                            "{k}"
+                        }
+                        div {
+                            style: "{cell_style}",
+                            "{v}"
+                        }
+                    }
+                )
+            })
+        }
+    ))
 }

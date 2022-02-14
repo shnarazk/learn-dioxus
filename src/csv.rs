@@ -32,7 +32,7 @@ pub async fn load_csv() -> hyper::Result<Vec<CovidInstance>> {
                 .skip(1)
                 .filter(|s| 1 < s.len())
                 .map(|s| {
-                    let csv = line.captures(s).expect("wrong format");
+                    let csv = line.captures(s).unwrap_or_else(|| panic!("{}", s));
                     CovidInstance {
                         num: csv[1].parse::<u32>().expect(""),
                         date: csv[4].to_string(),
