@@ -279,6 +279,7 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
                         }
                         div {
                             style: "{cell_style}",
+                            class: "right-aligned",
                             "{v}"
                         }
                     }
