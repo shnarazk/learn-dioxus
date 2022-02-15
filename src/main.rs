@@ -2,7 +2,11 @@ use {dioxus::prelude::*, std::collections::HashMap};
 mod csv;
 
 fn main() {
+    #[cfg(feature = "desktop")]
     dioxus::desktop::launch(App);
+
+    #[cfg(feature = "web")]
+    dioxus::web::launch(App);
 }
 
 #[derive(PartialEq)]

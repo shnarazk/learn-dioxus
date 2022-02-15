@@ -6,7 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dioxus = { versions = "0.1.7", features = ["desktop"] }
+dioxus = { versions = "0.1.7", features = ["desktop", "web"] }
 hyper = { version = "^0.14", features = ["full"] }
 hyper-tls = "0.5"
 regex = "1.5"
+
+[features]
+default = [ "web" ]
+desktop = []
+web = []
