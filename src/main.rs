@@ -48,7 +48,7 @@ fn App(cx: Scope) -> Element {
             dates.sort_unstable();
             dates = dates
                 .iter()
-                .skip(dates.len() - 21)
+                .skip(dates.len().saturating_sub(50))
                 .copied()
                 .collect::<Vec<_>>();
             let mut locs: Vec<(&str, u32)> = ht_locs
@@ -147,7 +147,13 @@ struct TableProps<'a> {
 fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
     let graph_width: f32 = 400.0;
     let graph_height: f32 = 100.0;
-    let height: f32 = cx.props.data.iter().map(|e| (e.1 / 2000 + 1) * 2000).max().unwrap() as f32;
+    let height: f32 = cx
+        .props
+        .data
+        .iter()
+        .map(|e| (e.1 / 2000 + 1) * 2000)
+        .max()
+        .unwrap() as f32;
     let width: f32 = cx.props.data.len() as f32;
     let scale_w = graph_width / (width - 1.0);
     let scale_h = graph_height / height;
@@ -168,19 +174,49 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
             .collect::<Vec<_>>()
             .join(" "),
     );
-    let mut ema_vec: Vec<f32> = cx.props.data.iter().map(|(_, v)| *v as f32).clone().collect::<Vec<_>>();
+    let mut value_vec: Vec<f32> = cx
+        .props
+        .data
+        .iter()
+        .map(|(_, v)| *v as f32)
+        .clone()
+        .collect::<Vec<_>>();
+    let line_ema = if cx.props.with_ema {
+        let days: f32 = 7.0;
+        let mut ema: f32 = value_vec[0];
+        format!(
+            "M0,{:.2} {}",
+            graph_height - value_vec[0] * scale_h,
+            value_vec
+                .iter()
+                .enumerate()
+                .map(|(i, v)| {
+                    ema *= (days - 1.0) / days;
+                    ema += v / days;
+                    format!(
+                        "L{:.2},{:.2}",
+                        i as f32 * scale_w,
+                        graph_height - ema * scale_h
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(" ")
+        )
+    } else {
+        "".to_string()
+    };
     {
         let first = cx.props.data[0].1 as f32;
         for _ in 0..6 {
-            ema_vec.insert(0, first);
+            value_vec.insert(0, first);
         }
     }
-    let average = |v: &[f32]| { v.iter().sum::<f32>() / v.len() as f32 };
-    let path_ema = if cx.props.with_ema {
+    let line_average = if cx.props.with_ema {
+        let average = |v: &[f32]| v.iter().sum::<f32>() / v.len() as f32;
         format!(
             "M0,{:.2} {}",
-            graph_height - ema_vec[0] * scale_h,
-            ema_vec
+            graph_height - value_vec[0] * scale_h,
+            value_vec
                 .windows(7)
                 .enumerate()
                 .map(|(i, v)| {
@@ -207,11 +243,16 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
                 stroke_linejoin: "round",
 
                 view_box: "0 0 400 100",
-                // xmlns: "http://www.w3.org/2000/svg",
                 path {
                     stroke: "red",
                     stroke_width: "0.6",
-                    d: "{path_ema}"
+                    d: "{line_average}"
+                }
+                path {
+                    stroke: "green",
+                    stroke_width: "0.6",
+                    stroke_dasharray: "6 2",
+                    d: "{line_ema}"
                 }
                 path {
                     stroke: "currentColor",
@@ -221,7 +262,7 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
             }
         }
         div {
-            style: "margin-left: 20px;margin-right: 20px; background-color: #eee;",
+            style: "margin-left: 20px;margin-right: 20px; background-color: #eee; height: 280px; overflow: scroll;",
             class: "table",
             cx.props.data.iter().enumerate().map(|(i, (k, v))| {
                 let style = if i % 2 == 0 {
