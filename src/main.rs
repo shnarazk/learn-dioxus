@@ -236,7 +236,7 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
     cx.render(rsx!(
         hr {}
         div {
-            style: "width: 94%; margin-left: 3%; margin-bottom: 1rem; background-color: #f8f8f8;",
+            class: "data-graph",
             svg {
                 fill: "none",
                 stroke_linecap: "round",
@@ -262,8 +262,7 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
             }
         }
         div {
-            style: "margin-left: 20px;margin-right: 20px; background-color: #eee; height: 280px; overflow: scroll;",
-            class: "table",
+            class: "data-table",
             cx.props.data.iter().enumerate().map(|(i, (k, v))| {
                 let style = if i % 2 == 0 {
                     "background-color: #eeeeee;"

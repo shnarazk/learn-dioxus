@@ -15,7 +15,18 @@ button {
 .other-mode {
     color: #777;
 }
-.table {
+.data-graph {
+    width: 94%;
+    margin-left: 3%;
+    margin-bottom: 1rem;
+    background-color: #f8f8f8;
+}
+.data-table {
+    margin-left: 20px;
+    margin-right: 20px;
+    background-color: #eee;
+    height: 280px;
+    overflow: scroll;
     font-family: monospace;
 }
 .right-aligned {
