@@ -245,12 +245,12 @@ fn Table<'a>(cx: Scope<'a, TableProps<'a>>) -> Element {
                 view_box: "0 0 400 100",
                 path {
                     stroke: "red",
-                    stroke_width: "0.6",
+                    stroke_width: "0.8",
                     d: "{line_average}"
                 }
                 path {
                     stroke: "green",
-                    stroke_width: "0.6",
+                    stroke_width: "0.4",
                     stroke_dasharray: "6 2",
                     d: "{line_ema}"
                 }
