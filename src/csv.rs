@@ -12,6 +12,11 @@ pub struct CovidInstance {
 }
 
 pub async fn load_csv() -> hyper::Result<Vec<CovidInstance>> {
+    let line = Regex::new(
+        // 176230,400009,福岡県,2022/02/11,金,久留米市,20代,男性,,,
+        r"([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)",
+    )
+        .expect("wrong");
     let base = "https://ckan.open-governmentdata.org/dataset/401000_pref_fukuoka_covid19_patients";
     let target = Regex::new("https://ckan[^\"]+csv").expect("wrong regex");
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
@@ -20,11 +25,6 @@ pub async fn load_csv() -> hyper::Result<Vec<CovidInstance>> {
     let str = String::from_utf8_lossy(buf.as_ref());
     for l in str.lines() {
         if let Some(url) = target.captures(l) {
-            // 176230,400009,福岡県,2022/02/11,金,久留米市,20代,男性,,,
-            let line = Regex::new(
-                r"([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)",
-            )
-            .expect("wrong");
             let res = client.get(url[0].parse().expect("wrong url")).await?;
             let buf = hyper::body::to_bytes(res).await?;
             return Ok(String::from_utf8_lossy(buf.as_ref())
