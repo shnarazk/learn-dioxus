@@ -1,4 +1,4 @@
-use {hyper::Client, hyper_tls::HttpsConnector, regex::Regex};
+use {hyper::Client, hyper_tls::HttpsConnector, lazy_static::lazy_static, regex::Regex};
 
 #[derive(Debug, Default, PartialEq, PartialOrd)]
 pub struct CovidInstance {
@@ -11,12 +11,30 @@ pub struct CovidInstance {
     pub gender: String,
 }
 
-pub async fn load_csv() -> hyper::Result<Vec<CovidInstance>> {
-    let line = Regex::new(
+lazy_static! {
+    static ref CSV_LINE: Regex = Regex::new(
         // 176230,400009,福岡県,2022/02/11,金,久留米市,20代,男性,,,
-        r"([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)",
-    )
-        .expect("wrong");
+        r"([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*),([^,]*)"
+    ).expect("");
+}
+
+impl TryFrom<&str> for CovidInstance {
+    type Error = ();
+    fn try_from(s: &str) -> Result<Self, Self::Error> {
+        CSV_LINE
+            .captures(s)
+            .map(|csv| CovidInstance {
+                num: csv[1].parse::<u32>().expect(""),
+                date: csv[4].to_string(),
+                location: csv[6].to_string(),
+                age: csv[7].to_string(),
+                gender: csv[8].to_string(),
+            })
+            .ok_or(())
+    }
+}
+
+pub async fn load_csv() -> hyper::Result<Vec<CovidInstance>> {
     let base = "https://ckan.open-governmentdata.org/dataset/401000_pref_fukuoka_covid19_patients";
     let target = Regex::new("https://ckan[^\"]+csv").expect("wrong regex");
     let client = Client::builder().build::<_, hyper::Body>(HttpsConnector::new());
@@ -31,16 +49,7 @@ pub async fn load_csv() -> hyper::Result<Vec<CovidInstance>> {
                 .split('\n')
                 .skip(1)
                 .filter(|s| 1 < s.len())
-                .map(|s| {
-                    let csv = line.captures(s).unwrap_or_else(|| panic!("{}", s));
-                    CovidInstance {
-                        num: csv[1].parse::<u32>().expect(""),
-                        date: csv[4].to_string(),
-                        location: csv[6].to_string(),
-                        age: csv[7].to_string(),
-                        gender: csv[8].to_string(),
-                    }
-                })
+                .flat_map(CovidInstance::try_from)
                 .collect::<Vec<CovidInstance>>());
         }
     }
