@@ -6,7 +6,7 @@ pub fn HighFiveApp(cx: Scope) -> Element {
     cx.render(rsx!(
         h1 {
             style { [include_str!("../assets/main.scss")] }
-            "High-Five counter: {count}"
+            "High-Five (WASM version) counter: {count}"
         }
         Quantity {
             on_up: move |_| set_count(count + 1),
