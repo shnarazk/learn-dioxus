@@ -2,15 +2,15 @@ use dioxus::{events::MouseEvent, prelude::*};
 
 #[allow(non_snake_case)]
 pub fn HighFiveApp(cx: Scope) -> Element {
-    let (count, set_count) = use_state(&cx, || 0i32);
+    let count = use_state(&cx, || 0i32);
     cx.render(rsx!(
         h1 {
             style { [include_str!("../assets/main.scss")] }
             "High-Five counter: {count}"
         }
         Quantity {
-            on_up: move |_| set_count(count + 1),
-            on_down: move |_| set_count(count - 1),
+            on_up: move |_| count.modify(|c| c + 1),
+            on_down: move |_| count.modify(|c| c - 1),
         }
     ))
 }

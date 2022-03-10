@@ -14,8 +14,8 @@ enum TableMode {
 
 #[allow(non_snake_case)]
 fn App(cx: Scope) -> Element {
-    let csv = use_future(&cx, || async move { csv::load_csv().await });
-    let (display_mode, set_display_mode) = use_state(&cx, || TableMode::Date);
+    let csv = use_future(&cx, (), |_| async move { csv::load_csv().await });
+    let display_mode = use_state(&cx, || TableMode::Date);
     // let (_hash, update_hash) = use_state(&cx, HashMap::<&str, u32>::new);
     match csv.value() {
         Some(Ok(csv)) => {
@@ -57,7 +57,7 @@ fn App(cx: Scope) -> Element {
                 .filter(|(k, v)| !k.is_empty() && 100 <= *v)
                 .collect();
             locs.sort_by_cached_key(|i| -(i.1 as i32));
-            let table = match display_mode {
+            let table = match *display_mode.current() {
                 TableMode::Age => rsx!(Table {
                     data: ages,
                     with_ema: false
@@ -75,7 +75,7 @@ fn App(cx: Scope) -> Element {
                 rsx!(
                     button {
                         class: "current-mode",
-                        onclick: move |_| {set_display_mode(TableMode::Age)},
+                        onclick: move |_| {display_mode.modify(|_| TableMode::Age)},
                         "世代別"
                     }
                 )
@@ -83,7 +83,7 @@ fn App(cx: Scope) -> Element {
                 rsx!(
                     button {
                         class: "other-mode",
-                        onclick: move |_| {set_display_mode(TableMode::Age)},
+                        onclick: move |_| {display_mode.modify(|_| TableMode::Age)},
                         "世代別"
                     }
                 )
@@ -92,7 +92,7 @@ fn App(cx: Scope) -> Element {
                 rsx!(
                     button {
                         class: "current-mode",
-                        onclick: move |_| {set_display_mode(TableMode::Date)},
+                        onclick: move |_| {display_mode.modify(|_| TableMode::Date)},
                 "時間順"
                     }
                 )
@@ -100,7 +100,7 @@ fn App(cx: Scope) -> Element {
                 rsx!(
                     button {
                         class: "other-mode",
-                        onclick: move |_| {set_display_mode(TableMode::Date)},
+                        onclick: move |_| {display_mode.modify(|_| TableMode::Date)},
                         "時間順"
                     }
                 )
@@ -109,7 +109,7 @@ fn App(cx: Scope) -> Element {
                 rsx!(
                     button {
                         class: "current-mode",
-                        onclick: move |_| {set_display_mode(TableMode::Location)},
+                        onclick: move |_| {display_mode.modify(|_| TableMode::Location)},
                         "地区別"
                     }
                 )
@@ -117,7 +117,7 @@ fn App(cx: Scope) -> Element {
                 rsx!(
                     button {
                         class: "other-mode",
-                        onclick: move |_| {set_display_mode(TableMode::Location)},
+                            onclick: move |_| {display_mode.modify(|_| TableMode::Location)},
                         "地区別"
                     }
                 )
